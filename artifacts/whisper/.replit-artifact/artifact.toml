@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Whisper"
+description = "Personal anonymous message inboxes with shareable links, favorites, deletion, and spam protection."
+version = "1.0.0"
+id = "artifacts/whisper"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24237
+
+[services.development]
+run = "pnpm --filter @workspace/whisper run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/whisper", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/whisper/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24237"
+BASE_PATH = "/"

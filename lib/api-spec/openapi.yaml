@@ -11,6 +11,130 @@ tags:
   - name: health
     description: Health operations
 paths:
+  /auth/user:
+    get:
+      operationId: getCurrentAuthUser
+      responses:
+        "200":
+          description: Auth state
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AuthUserEnvelope" }
+  /mobile-auth/token-exchange:
+    post:
+      operationId: exchangeMobileAuthorizationCode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MobileTokenExchangeRequest" }
+      responses:
+        "200":
+          description: Session
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MobileTokenExchangeSuccess" }
+  /mobile-auth/logout:
+    post:
+      operationId: logoutMobileSession
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+  /login:
+    get:
+      operationId: beginBrowserLogin
+      responses:
+        "302": { description: Redirect to sign in }
+  /callback:
+    get:
+      operationId: handleBrowserLoginCallback
+      responses:
+        "302": { description: Redirect after sign in }
+  /logout:
+    get:
+      operationId: logoutBrowserSession
+      responses:
+        "302": { description: Redirect after sign out }
+  /inbox:
+    get:
+      operationId: getInbox
+      responses:
+        "200":
+          description: Inbox profile and message counts
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Inbox" }
+    patch:
+      operationId: updateInbox
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/InboxInput" }
+      responses:
+        "200":
+          description: Updated inbox
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Inbox" }
+  /messages:
+    get:
+      operationId: listMessages
+      responses:
+        "200":
+          description: Private received messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Message" }
+  /messages/{id}:
+    parameters:
+      - { name: id, in: path, required: true, schema: { type: integer } }
+    patch:
+      operationId: updateMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MessageUpdate" }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Message" }
+    delete:
+      operationId: deleteMessage
+      responses:
+        "204": { description: Deleted }
+  /public/{handle}:
+    parameters:
+      - { name: handle, in: path, required: true, schema: { type: string } }
+    get:
+      operationId: getPublicInbox
+      responses:
+        "200":
+          description: Public profile only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicInbox" }
+    post:
+      operationId: sendMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MessageInput" }
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
   /healthz:
     get:
       operationId: healthCheck
@@ -26,6 +150,88 @@ paths:
                 $ref: "#/components/schemas/HealthStatus"
 components:
   schemas:
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id: { type: string }
+        email: { type: [string, "null"] }
+        firstName: { type: [string, "null"] }
+        lastName: { type: [string, "null"] }
+        profileImageUrl: { type: [string, "null"] }
+    MobileTokenExchangeRequest:
+      type: object
+      required: [code, code_verifier, redirect_uri, state]
+      properties:
+        code: { type: string, minLength: 1 }
+        code_verifier: { type: string, minLength: 1 }
+        redirect_uri: { type: string, minLength: 1, format: uri }
+        state: { type: string, minLength: 1 }
+        nonce: { type: string, minLength: 1 }
+    MobileTokenExchangeSuccess:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+    PublicInbox:
+      type: object
+      required: [handle, displayName, bio, acceptingMessages]
+      properties:
+        handle: { type: string }
+        displayName: { type: string }
+        bio: { type: string }
+        acceptingMessages: { type: boolean }
+    Inbox:
+      type: object
+      required: [handle, displayName, bio, acceptingMessages, total, unread, favorites]
+      properties:
+        handle: { type: string }
+        displayName: { type: string }
+        bio: { type: string }
+        acceptingMessages: { type: boolean }
+        total: { type: integer }
+        unread: { type: integer }
+        favorites: { type: integer }
+    InboxInput:
+      type: object
+      required: [displayName, bio, acceptingMessages]
+      properties:
+        displayName: { type: string, minLength: 1, maxLength: 60 }
+        bio: { type: string, maxLength: 200 }
+        acceptingMessages: { type: boolean }
+    Message:
+      type: object
+      required: [id, content, createdAt, isRead, isFavorite]
+      properties:
+        id: { type: integer }
+        content: { type: string }
+        createdAt: { type: string }
+        isRead: { type: boolean }
+        isFavorite: { type: boolean }
+    MessageUpdate:
+      type: object
+      properties:
+        isRead: { type: boolean }
+        isFavorite: { type: boolean }
+    MessageInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 1000 }
+        website: { type: string, maxLength: 200 }
+    Success:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean }
     HealthStatus:
       type: object
       properties:

@@ -1,0 +1,1 @@
+- [Anonymous inbox privacy](privacy.md) — recipient anonymity, separate abuse controls, and clearly labeled illustrative notes.
